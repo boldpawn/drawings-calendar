@@ -18,6 +18,8 @@ import (
 	"time"
 	"strconv"
 	"path/filepath"
+	"image/draw"
+	"image/jpeg"
 )
 
 type ByDate []string
@@ -84,6 +86,19 @@ func loadFace(fontName string) (font.Face) {
 	return truetype.NewFace(f, &fontOptions)
 }
 
+func loadInputImage(fileName string) image.Image {
+	reader, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Error while opening file %s. Error = %s", fileName, err)
+	}
+	defer reader.Close()
+	m, err := jpeg.Decode(reader)
+	if err != nil {
+		log.Fatalf("Error while decoding file %s. Error = %s", fileName, err)
+	}
+	return m
+}
+
 func sortedListOfImages(imageFolder string) []string {
 	fmt.Printf("Loading images from %q\n", imageFolder)
 	files, err := ioutil.ReadDir(imageFolder)
@@ -132,14 +147,13 @@ func saveImage(img image.Image, destFolder string, fileName string) {
 	fullPath := destFolder + fileSeparator + fileName
 	outFile, err := os.Create(fullPath)
 	if err != nil {
-		log.Println(err)
-		os.Exit(1)
+		log.Fatalf("Error while saving image. Error = %s", err)
 	}
 	defer outFile.Close()
 
 	err = png.Encode(outFile, img)
 	if (err != nil) {
-		log.Fatalf("Error while writing image %s. Error = %s", fullPath, err)
+		log.Fatalf("Error while writing image. Error = %s", err)
 	}
 }
 
@@ -187,7 +201,11 @@ func main() {
 	for _, fileName := range fileNames {
 		drawingTexts := buildTextFromFileName(fileName)
 		m := createTextImage(face, drawingTexts)
-		saveImage(m, *imageFolder + fileSeparator + "out", fileName)
+		imageWithDrawing := loadInputImage(*imageFolder + fileSeparator + fileName)
+		newRect := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
+		draw.Draw(newRect, newRect.Bounds(), m, image.Point{X:0, Y:0}, draw.Src)
+		draw.Draw(newRect, newRect.Bounds(), imageWithDrawing, image.Point{X:-240, Y:0}, draw.Src)
+		saveImage(newRect, *imageFolder + fileSeparator + "out", fileName)
 		fmt.Printf("Image %s saved\n", fileName)
 	}
 }
