@@ -25,7 +25,7 @@ import (
 type ByDate []string
 
 var dateExpression = regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
-var nameExpression = regexp.MustCompile(`\w+\.`)
+var nameExpression = regexp.MustCompile(`\d{4}-\d{2}-\d{2}-\s*([^\n\r]*)`)
 
 func (a ByDate) Len() int { return len(a) }
 func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -129,6 +129,8 @@ func drawStringInCenter(d font.Drawer, s string, y int) {
 
 func createTextImage(face font.Face, texts DrawingTexts) image.Image {
 	m := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
+	white := color.RGBA{255, 255, 255, 255}
+	draw.Draw(m, m.Bounds(), &image.Uniform{white}, image.ZP, draw.Src)
 	source := &image.Uniform{color.RGBA{0, 0, 0, 255}}
 	drawer := font.Drawer{
 		Dst:  m,
@@ -174,7 +176,16 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	texts.dayNumber = strconv.Itoa(t.Day())
 	texts.dayName = dayMap[t.Weekday()]
 	texts.monthName = monthMap[t.Month()]
-	texts.name = nameExpression.FindString(fileName)
+	matchparts := nameExpression.FindStringSubmatch(fileName)
+	for _, s := range matchparts {
+		fmt.Printf("match = %s\n", s)
+	}
+
+	//fmt.Printf("%v", matchparts)
+	if (len(matchparts) > 1) {
+		var extension = filepath.Ext(matchparts[1])
+		texts.name = matchparts[1][0:len(matchparts[1])-len(extension)]
+	}
 	return *texts
 }
 
