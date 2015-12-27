@@ -68,6 +68,7 @@ type DrawingTexts struct {
 	year      DrawingText
 	name      DrawingText
 	website   DrawingText
+	licensed DrawingText
 }
 
 var faces = [8]font.Face{}
@@ -166,6 +167,7 @@ func createTextImage(texts DrawingTexts) image.Image {
 	drawStringInCenter(m, source, texts.monthName, 450)
 	drawStringInCenter(m, source, texts.year, 570)
 	drawStringInCenter(m, source, texts.name, 50)
+	drawStringInCenter(m, source, texts.licensed, 1020)
 	drawStringInCenter(m, source, texts.website, 1060)
 	return m
 }
@@ -201,6 +203,7 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	texts.dayNumber = DrawingText{text:strconv.Itoa(t.Day()), faceIndex:0}
 	texts.dayName = DrawingText{text:dayMap[t.Weekday()], faceIndex:0}
 	texts.monthName = DrawingText{text:monthMap[t.Month()], faceIndex:0}
+	texts.licensed = DrawingText{text:"licentie: 't Oudelandt", faceIndex:5}
 	matchparts := nameExpression.FindStringSubmatch(fileName)
 
 	if (len(matchparts) > 1) {
