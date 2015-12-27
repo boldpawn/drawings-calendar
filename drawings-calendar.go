@@ -161,10 +161,10 @@ func createTextImage(texts DrawingTexts) image.Image {
 	white := color.RGBA{255, 255, 255, 255}
 	draw.Draw(m, m.Bounds(), &image.Uniform{white}, image.ZP, draw.Src)
 	source := &image.Uniform{color.RGBA{0, 0, 0, 255}}
-	drawStringInCenter(m, source, texts.dayName, 350)
-	drawStringInCenter(m, source, texts.dayNumber, 450)
-	drawStringInCenter(m, source, texts.monthName, 550)
-	drawStringInCenter(m, source, texts.year, 650)
+	drawStringInCenter(m, source, texts.dayName, 250)
+	drawStringInCenter(m, source, texts.dayNumber, 350)
+	drawStringInCenter(m, source, texts.monthName, 450)
+	drawStringInCenter(m, source, texts.year, 570)
 	drawStringInCenter(m, source, texts.name, 50)
 	drawStringInCenter(m, source, texts.website, 1060)
 	return m
@@ -196,7 +196,7 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	const dateFormat = "2006-01-02"
 	t, _ := time.Parse(dateFormat, dateString)
 	texts := new(DrawingTexts)
-	texts.website = DrawingText{text:"www.piasprong.nl", faceIndex:6}
+	texts.website = DrawingText{text:"piasprong.nl", faceIndex:5}
 	texts.year = DrawingText{text:strconv.Itoa(t.Year()), faceIndex:0}
 	texts.dayNumber = DrawingText{text:strconv.Itoa(t.Day()), faceIndex:0}
 	texts.dayName = DrawingText{text:dayMap[t.Weekday()], faceIndex:0}
@@ -206,7 +206,7 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	if (len(matchparts) > 1) {
 		var extension = filepath.Ext(matchparts[1])
 		s := matchparts[1][0:len(matchparts[1]) - len(extension)]
-		texts.name = DrawingText{text:s, faceIndex:2}
+		texts.name = DrawingText{text:s, faceIndex:4}
 	}
 	return *texts
 }
