@@ -211,6 +211,17 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	return *texts
 }
 
+func createCalenderFile(imageFolder string, fileName string) {
+	drawingTexts := buildTextFromFileName(fileName)
+	m := createTextImage(drawingTexts)
+	imageWithDrawing := loadInputImage(imageFolder + fileSeparator + fileName)
+	newRect := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
+	draw.Draw(newRect, newRect.Bounds(), m, image.Point{X:0, Y:0}, draw.Src)
+	draw.Draw(newRect, newRect.Bounds(), imageWithDrawing, image.Point{X:-240, Y:0}, draw.Src)
+	saveImage(newRect, imageFolder + fileSeparator + "out", fileName)
+	fmt.Printf("Image %s saved\n", fileName)
+}
+
 func main() {
 
 	fontName := flag.String("font", "Verdana", "font name [Verdana]")
@@ -232,13 +243,6 @@ func main() {
 	os.Mkdir(*imageFolder + string(fileSeparator) + "out", 0755)
 
 	for _, fileName := range fileNames {
-		drawingTexts := buildTextFromFileName(fileName)
-		m := createTextImage(drawingTexts)
-		imageWithDrawing := loadInputImage(*imageFolder + fileSeparator + fileName)
-		newRect := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
-		draw.Draw(newRect, newRect.Bounds(), m, image.Point{X:0, Y:0}, draw.Src)
-		draw.Draw(newRect, newRect.Bounds(), imageWithDrawing, image.Point{X:-240, Y:0}, draw.Src)
-		saveImage(newRect, *imageFolder + fileSeparator + "out", fileName)
-		fmt.Printf("Image %s saved\n", fileName)
+		createCalenderFile(*imageFolder, fileName)
 	}
 }
