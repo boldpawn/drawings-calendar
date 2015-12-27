@@ -56,20 +56,26 @@ var dayMap = map[time.Weekday]string{
 	time.Saturday : "zaterdag",
 }
 
-type DrawingTexts struct {
-	dayName   string
-	dayNumber string
-	monthName string
-	year      string
-	name      string
-	website   string
+type DrawingText struct {
+	text string
+	faceIndex int
 }
+
+type DrawingTexts struct {
+	dayName   DrawingText
+	dayNumber DrawingText
+	monthName DrawingText
+	year      DrawingText
+	name      DrawingText
+	website   DrawingText
+}
+
+var faces = [8]font.Face{}
 
 var fileSeparator = fmt.Sprintf("%c", filepath.Separator)
 
-func loadFace(fontName string) (font.Face) {
+func loadFaces(fontName string) {
 
-	fontOptions := truetype.Options{Size: 32}
 	s := []string{"/Library/Fonts/", fontName, ".ttf"}
 	fontFileName := strings.Join(s, "")
 
@@ -83,7 +89,14 @@ func loadFace(fontName string) (font.Face) {
 		log.Fatalf("Error while parsing font file %s. Error = %s", fontFileName, err)
 	}
 	fmt.Printf("Fontfile %q loaded\n", fontFileName)
-	return truetype.NewFace(f, &fontOptions)
+	faces[0] = truetype.NewFace(f, &truetype.Options{Size: 40})
+	faces[1] = truetype.NewFace(f, &truetype.Options{Size: 36})
+	faces[2] = truetype.NewFace(f, &truetype.Options{Size: 32})
+	faces[3] = truetype.NewFace(f, &truetype.Options{Size: 28})
+	faces[4] = truetype.NewFace(f, &truetype.Options{Size: 24})
+	faces[5] = truetype.NewFace(f, &truetype.Options{Size: 20})
+	faces[6] = truetype.NewFace(f, &truetype.Options{Size: 16})
+	faces[7] = truetype.NewFace(f, &truetype.Options{Size: 12})
 }
 
 func loadInputImage(fileName string) image.Image {
@@ -119,29 +132,41 @@ func sortedListOfImages(imageFolder string) []string {
 	return fileNames
 }
 
-func drawStringInCenter(d font.Drawer, s string, y int) {
-	width := fixed.I(240)
-	stringLength := d.MeasureString(s)
-	startPosition := fixed.Point26_6{X: ((width - stringLength) / 2), Y: fixed.I(y)}
-	d.Dot = startPosition
-	d.DrawString(s)
+func drawStringInCenter(dest draw.Image, source image.Image, text DrawingText, y int) {
+	if &text == nil {
+		return
+	}
+
+	var drawingOk bool
+
+	for i:= text.faceIndex; i<len(faces) && !drawingOk; i++ {
+		drawer := font.Drawer{
+			Dst:  dest,
+			Src:  source,
+			Face: faces[i]}
+		width := fixed.I(240)
+		stringLength := drawer.MeasureString(text.text)
+		startPosition := fixed.Point26_6{X: ((width - stringLength) / 2), Y: fixed.I(y)}
+		if startPosition.X > fixed.I(5) {
+			drawer.Dot = startPosition
+			drawer.DrawString(text.text)
+			drawingOk = true
+		}
+	}
+
 }
 
-func createTextImage(face font.Face, texts DrawingTexts) image.Image {
+func createTextImage(texts DrawingTexts) image.Image {
 	m := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
 	white := color.RGBA{255, 255, 255, 255}
 	draw.Draw(m, m.Bounds(), &image.Uniform{white}, image.ZP, draw.Src)
 	source := &image.Uniform{color.RGBA{0, 0, 0, 255}}
-	drawer := font.Drawer{
-		Dst:  m,
-		Src:  source,
-		Face: face}
-	drawStringInCenter(drawer, texts.dayName, 200)
-	drawStringInCenter(drawer, texts.dayNumber, 300)
-	drawStringInCenter(drawer, texts.monthName, 400)
-	drawStringInCenter(drawer, texts.year, 500)
-	drawStringInCenter(drawer, texts.name, 800)
-	drawStringInCenter(drawer, texts.website, 900)
+	drawStringInCenter(m, source, texts.dayName, 350)
+	drawStringInCenter(m, source, texts.dayNumber, 450)
+	drawStringInCenter(m, source, texts.monthName, 550)
+	drawStringInCenter(m, source, texts.year, 650)
+	drawStringInCenter(m, source, texts.name, 50)
+	drawStringInCenter(m, source, texts.website, 1060)
 	return m
 }
 
@@ -171,20 +196,17 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	const dateFormat = "2006-01-02"
 	t, _ := time.Parse(dateFormat, dateString)
 	texts := new(DrawingTexts)
-	texts.website = "www.piasprong.nl"
-	texts.year = strconv.Itoa(t.Year())
-	texts.dayNumber = strconv.Itoa(t.Day())
-	texts.dayName = dayMap[t.Weekday()]
-	texts.monthName = monthMap[t.Month()]
+	texts.website = DrawingText{text:"www.piasprong.nl", faceIndex:6}
+	texts.year = DrawingText{text:strconv.Itoa(t.Year()), faceIndex:0}
+	texts.dayNumber = DrawingText{text:strconv.Itoa(t.Day()), faceIndex:0}
+	texts.dayName = DrawingText{text:dayMap[t.Weekday()], faceIndex:0}
+	texts.monthName = DrawingText{text:monthMap[t.Month()], faceIndex:0}
 	matchparts := nameExpression.FindStringSubmatch(fileName)
-	for _, s := range matchparts {
-		fmt.Printf("match = %s\n", s)
-	}
 
-	//fmt.Printf("%v", matchparts)
 	if (len(matchparts) > 1) {
 		var extension = filepath.Ext(matchparts[1])
-		texts.name = matchparts[1][0:len(matchparts[1])-len(extension)]
+		s := matchparts[1][0:len(matchparts[1]) - len(extension)]
+		texts.name = DrawingText{text:s, faceIndex:2}
 	}
 	return *texts
 }
@@ -198,7 +220,7 @@ func main() {
 	fmt.Printf("font name = %s\n", *fontName)
 	fmt.Printf("folder = %s\n", *imageFolder)
 
-	face := loadFace(*fontName)
+	loadFaces(*fontName)
 	fileNames := sortedListOfImages(*imageFolder)
 
 	outputFolder := *imageFolder + fileSeparator + "out"
@@ -211,7 +233,7 @@ func main() {
 
 	for _, fileName := range fileNames {
 		drawingTexts := buildTextFromFileName(fileName)
-		m := createTextImage(face, drawingTexts)
+		m := createTextImage(drawingTexts)
 		imageWithDrawing := loadInputImage(*imageFolder + fileSeparator + fileName)
 		newRect := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
 		draw.Draw(newRect, newRect.Bounds(), m, image.Point{X:0, Y:0}, draw.Src)
