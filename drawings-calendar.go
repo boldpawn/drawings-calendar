@@ -3,23 +3,24 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"github.com/golang/freetype/truetype"
-	"golang.org/x/image/font"
-	"strings"
-	"log"
-	"regexp"
-	"sort"
 	"image"
-	"os"
-	"image/png"
 	"image/color"
-	"golang.org/x/image/math/fixed"
-	"time"
-	"strconv"
-	"path/filepath"
 	"image/draw"
 	"image/jpeg"
+	"image/png"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 )
 
 type ByDate []string
@@ -27,37 +28,39 @@ type ByDate []string
 var dateExpression = regexp.MustCompile(`\d{4}-\d{2}-\d{2}`)
 var nameExpression = regexp.MustCompile(`\d{4}-\d{2}-\d{2}-\s*([^\n\r]*)`)
 
-func (a ByDate) Len() int { return len(a) }
+func (a ByDate) Len() int      { return len(a) }
 func (a ByDate) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByDate) Less(i, j int) bool { return dateExpression.FindString(a[i]) < dateExpression.FindString(a[j]) }
+func (a ByDate) Less(i, j int) bool {
+	return dateExpression.FindString(a[i]) < dateExpression.FindString(a[j])
+}
 
 var monthMap = map[time.Month]string{
-	time.January : "januari",
-	time.February : "februari",
-	time.March : "maart",
-	time.April : "april",
-	time.May : "mei",
-	time.June : "juni",
-	time.July : "juli",
-	time.August : "augustus",
-	time.September : "september",
-	time.October : "oktober",
-	time.November : "november",
-	time.December : "december",
+	time.January:   "januari",
+	time.February:  "februari",
+	time.March:     "maart",
+	time.April:     "april",
+	time.May:       "mei",
+	time.June:      "juni",
+	time.July:      "juli",
+	time.August:    "augustus",
+	time.September: "september",
+	time.October:   "oktober",
+	time.November:  "november",
+	time.December:  "december",
 }
 
 var dayMap = map[time.Weekday]string{
-	time.Sunday : "zondag",
-	time.Monday : "maandag",
-	time.Tuesday : "dinsdag",
-	time.Wednesday : "woensdag",
-	time.Thursday : "donderdag",
-	time.Friday : "vrijdag",
-	time.Saturday : "zaterdag",
+	time.Sunday:    "zondag",
+	time.Monday:    "maandag",
+	time.Tuesday:   "dinsdag",
+	time.Wednesday: "woensdag",
+	time.Thursday:  "donderdag",
+	time.Friday:    "vrijdag",
+	time.Saturday:  "zaterdag",
 }
 
 type DrawingText struct {
-	text string
+	text      string
 	faceIndex int
 }
 
@@ -68,7 +71,7 @@ type DrawingTexts struct {
 	year      DrawingText
 	name      DrawingText
 	website   DrawingText
-	licensed DrawingText
+	licensed  DrawingText
 }
 
 var faces = [8]font.Face{}
@@ -90,23 +93,23 @@ func loadFaces(fontName string) {
 		log.Fatalf("Error while parsing font file %s. Error = %s", fontFileName, err)
 	}
 	fmt.Printf("Fontfile %q loaded\n", fontFileName)
-	faces[0] = truetype.NewFace(f, &truetype.Options{Size: 40})
-	faces[1] = truetype.NewFace(f, &truetype.Options{Size: 36})
-	faces[2] = truetype.NewFace(f, &truetype.Options{Size: 32})
-	faces[3] = truetype.NewFace(f, &truetype.Options{Size: 28})
-	faces[4] = truetype.NewFace(f, &truetype.Options{Size: 24})
-	faces[5] = truetype.NewFace(f, &truetype.Options{Size: 20})
-	faces[6] = truetype.NewFace(f, &truetype.Options{Size: 16})
-	faces[7] = truetype.NewFace(f, &truetype.Options{Size: 12})
+	faces[0] = truetype.NewFace(f, &truetype.Options{Size: 56})
+	faces[1] = truetype.NewFace(f, &truetype.Options{Size: 44})
+	faces[2] = truetype.NewFace(f, &truetype.Options{Size: 40})
+	faces[3] = truetype.NewFace(f, &truetype.Options{Size: 36})
+	faces[4] = truetype.NewFace(f, &truetype.Options{Size: 32})
+	faces[5] = truetype.NewFace(f, &truetype.Options{Size: 28})
+	faces[6] = truetype.NewFace(f, &truetype.Options{Size: 24})
+	faces[7] = truetype.NewFace(f, &truetype.Options{Size: 20})
 }
 
 func loadInputImage(fileName string) image.Image {
-	reader, err := os.Open(fileName)
+	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Error while opening file %s. Error = %s", fileName, err)
 	}
-	defer reader.Close()
-	m, err := jpeg.Decode(reader)
+	defer file.Close()
+	m, err := jpeg.Decode(file)
 	if err != nil {
 		log.Fatalf("Error while decoding file %s. Error = %s", fileName, err)
 	}
@@ -116,16 +119,17 @@ func loadInputImage(fileName string) image.Image {
 func sortedListOfImages(imageFolder string) []string {
 	fmt.Printf("Loading images from %q\n", imageFolder)
 	files, err := ioutil.ReadDir(imageFolder)
-	if (err != nil) {
+	if err != nil {
 		log.Fatalf("Error reading image folder %s. Error = %s", imageFolder, err)
 	}
+	fmt.Printf("Nr of files found = %d\n", len(files))
 	nrOfImages := 0
 	fileNames := make([]string, 0, len(files))
 	for _, fileInfo := range files {
 		if !fileInfo.IsDir() && strings.HasSuffix(strings.ToLower(fileInfo.Name()), ".jpg") {
 			nrOfImages++
 			fileNames = fileNames[0:nrOfImages]
-			fileNames[nrOfImages - 1] = fileInfo.Name()
+			fileNames[nrOfImages-1] = fileInfo.Name()
 		}
 	}
 	sort.Sort(ByDate(fileNames))
@@ -140,12 +144,12 @@ func drawStringInCenter(dest draw.Image, source image.Image, text DrawingText, y
 
 	var drawingOk bool
 
-	for i:= text.faceIndex; i<len(faces) && !drawingOk; i++ {
+	for i := text.faceIndex; i < len(faces) && !drawingOk; i++ {
 		drawer := font.Drawer{
 			Dst:  dest,
 			Src:  source,
 			Face: faces[i]}
-		width := fixed.I(240)
+		width := fixed.I(392)
 		stringLength := drawer.MeasureString(text.text)
 		startPosition := fixed.Point26_6{X: ((width - stringLength) / 2), Y: fixed.I(y)}
 		if startPosition.X > fixed.I(5) {
@@ -181,15 +185,19 @@ func saveImage(img image.Image, destFolder string, fileName string) {
 	defer outFile.Close()
 
 	err = png.Encode(outFile, img)
-	if (err != nil) {
+	if err != nil {
 		log.Fatalf("Error while writing image. Error = %s", err)
 	}
 }
 
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
-	if err == nil { return true, nil }
-	if os.IsNotExist(err) { return false, nil }
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
 	return true, err
 }
 
@@ -198,30 +206,31 @@ func buildTextFromFileName(fileName string) DrawingTexts {
 	const dateFormat = "2006-01-02"
 	t, _ := time.Parse(dateFormat, dateString)
 	texts := new(DrawingTexts)
-	texts.website = DrawingText{text:"piasprong.nl", faceIndex:5}
-	texts.year = DrawingText{text:strconv.Itoa(t.Year()), faceIndex:0}
-	texts.dayNumber = DrawingText{text:strconv.Itoa(t.Day()), faceIndex:0}
-	texts.dayName = DrawingText{text:dayMap[t.Weekday()], faceIndex:0}
-	texts.monthName = DrawingText{text:monthMap[t.Month()], faceIndex:0}
-	texts.licensed = DrawingText{text:"licentie: 't Oudelandt", faceIndex:5}
+	texts.website = DrawingText{text: "piasprong.nl", faceIndex: 7}
+	texts.year = DrawingText{text: strconv.Itoa(t.Year()), faceIndex: 0}
+	texts.dayNumber = DrawingText{text: strconv.Itoa(t.Day()), faceIndex: 0}
+	texts.dayName = DrawingText{text: dayMap[t.Weekday()], faceIndex: 0}
+	texts.monthName = DrawingText{text: monthMap[t.Month()], faceIndex: 0}
+	texts.licensed = DrawingText{text: "licentie: 't Oudelandt", faceIndex: 7}
 	matchparts := nameExpression.FindStringSubmatch(fileName)
 
-	if (len(matchparts) > 1) {
+	if len(matchparts) > 1 {
 		var extension = filepath.Ext(matchparts[1])
-		s := matchparts[1][0:len(matchparts[1]) - len(extension)]
-		texts.name = DrawingText{text:s, faceIndex:4}
+		s := matchparts[1][0 : len(matchparts[1])-len(extension)]
+		texts.name = DrawingText{text: s, faceIndex: 4}
 	}
 	return *texts
 }
 
 func createCalenderFile(imageFolder string, fileName string) {
+	fmt.Printf("Processing image %s\n", fileName)
 	drawingTexts := buildTextFromFileName(fileName)
 	m := createTextImage(drawingTexts)
 	imageWithDrawing := loadInputImage(imageFolder + fileSeparator + fileName)
 	newRect := image.NewRGBA(image.Rect(0, 0, 1920, 1080))
-	draw.Draw(newRect, newRect.Bounds(), m, image.Point{X:0, Y:0}, draw.Src)
-	draw.Draw(newRect, newRect.Bounds(), imageWithDrawing, image.Point{X:-240, Y:0}, draw.Src)
-	saveImage(newRect, imageFolder + fileSeparator + "out", fileName)
+	draw.Draw(newRect, newRect.Bounds(), m, image.Point{X: 0, Y: 0}, draw.Src)
+	draw.Draw(newRect, newRect.Bounds(), imageWithDrawing, image.Point{X: -392, Y: 0}, draw.Src)
+	saveImage(newRect, imageFolder+fileSeparator+"out", fileName)
 	fmt.Printf("Image %s saved\n", fileName)
 }
 
@@ -243,7 +252,7 @@ func main() {
 		os.RemoveAll(*imageFolder + string(fileSeparator) + "out")
 	}
 
-	os.Mkdir(*imageFolder + string(fileSeparator) + "out", 0755)
+	os.Mkdir(*imageFolder+string(fileSeparator)+"out", 0755)
 
 	for _, fileName := range fileNames {
 		createCalenderFile(*imageFolder, fileName)
